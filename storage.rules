@@ -1,0 +1,23 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Material files (PDFs, images)
+    match /materials/{allPaths=**} {
+      // Anyone logged in can read learning materials
+      allow read: if isAuthenticated();
+      // Only teachers and admins can upload or delete study material files
+      allow write: if isAdmin();
+    }
+  }
+}
